@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 def generate_uuid(proxy):
     """
-        Generate v4 uuid for device
+    Generate v4 uuid for device
     """
     return hashlib.md5(proxy.encode("utf-8")).hexdigest()
 
@@ -60,7 +60,7 @@ class ProxyMiddleware:
     good: set = attr.ib(default=set())
     backoff: callable = attr.ib(init=False)
     total_requests: int = attr.ib(default=0)
-    # rotate every 2000 rqeuests 
+    # rotate every 2000 rqeuests
     rotate_every_request: int = attr.ib(default=2000)
     sem = attr.ib(init=False)
     mesh = attr.ib(repr=False, default=None)
@@ -72,14 +72,23 @@ class ProxyMiddleware:
 
     def __attrs_post_init__(self):
         log.info("PROXY Middleware initialized!")
-        self.locations = cycle(( "fr", "de", "au", "sg", "nl", "uk", ))
+        self.locations = cycle(
+            (
+                "fr",
+                "de",
+                "au",
+                "sg",
+                "nl",
+                "uk",
+            )
+        )
         self.sem = BoundedSemaphore(1)
         self.backoff = exp_backoff_full_jitter
         self.init_proxies(self.proxies)
 
     def init_proxies(self, proxies: list) -> None:
         """
-            Reset proxy checkers and set new ones
+        Reset proxy checkers and set new ones
         """
         self._proxies = {}
         self.dead = set()
@@ -92,12 +101,12 @@ class ProxyMiddleware:
 
     def set_new_proxies(self) -> None:
         """
-            Set new proxy for new country in cycle
+        Set new proxy for new country in cycle
         """
         log.info("Changing the proxy %s ", self.mesh)
         if self.mesh:
             log.info("Changing the proxy sleep for 5 seconds")
-            gevent.sleep(5) #waiting 5 seconds to other connection finish?
+            gevent.sleep(5)  # waiting 5 seconds to other connection finish?
             log.info("Proxy changed %s", self.changed)
             if not self.changed:
                 country = self.locations.__next__()
@@ -112,10 +121,7 @@ class ProxyMiddleware:
                     self.set_new_proxies()
                     return True
 
-                proxy_list = [
-                    self.proxy_init(proxy)
-                    for proxy in proxies
-                ]
+                proxy_list = [self.proxy_init(proxy) for proxy in proxies]
                 self.init_proxies(proxy_list)
                 self.changed = True
                 log.info("Changed country to %s", country)
@@ -151,7 +157,7 @@ class ProxyMiddleware:
     @property
     def available(self):
         """
-            Return list of available proxies
+        Return list of available proxies
         """
         return list(self.unchecked | self.good)
 
@@ -197,4 +203,3 @@ def exp_backoff(attempt, cap=36, base=5):
 def exp_backoff_full_jitter(*args, **kwargs):
     """ Exponential backoff time with Full Jitter """
     return random.uniform(0, exp_backoff(*args, **kwargs) - 5)
-

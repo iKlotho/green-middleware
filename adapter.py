@@ -14,7 +14,7 @@ log = logging.getLogger("Adapter")
 
 def generate_pid(proxy):
     """
-        Generate v4 uuid for device
+    Generate v4 uuid for device
     """
     return hashlib.md5(proxy.encode("utf-8")).hexdigest()
 
@@ -83,9 +83,8 @@ class ProxyAdapter(HTTPAdapter):
         :param kwargs: The keyword arguments from the call to send().
         """
         proxy_cls = request.proxy
-        if hasattr(proxy_cls, 'header_hook') and proxy_cls.header_hook is not None:
-            new_headers = proxy_cls.header_hook(
-                proxy_cls.uuid, proxy_cls.device)
+        if hasattr(proxy_cls, "header_hook") and proxy_cls.header_hook is not None:
+            new_headers = proxy_cls.header_hook(proxy_cls.uuid, proxy_cls.device)
             request.headers.update(new_headers)
         request.headers.update(proxy_cls.headers)
         return request.headers
@@ -101,8 +100,15 @@ class ProxyAdapter(HTTPAdapter):
             # HTTP headers. This way it is done before r.text is accessed
             # (which would do it with vanilla chardet). This is a big
             # performance boon.
-            response.encoding = cchardet.detect(response.content)['encoding']
-        if response.status_code in [400, 403, 407, 408, 429, 499, ]:
+            response.encoding = cchardet.detect(response.content)["encoding"]
+        if response.status_code in [
+            400,
+            403,
+            407,
+            408,
+            429,
+            499,
+        ]:
             if self.proxy_mw:
                 self.proxy_mw.mark_proxy_dead(req.proxy)
         # TODO this will only work for sahi
@@ -113,8 +119,12 @@ class ProxyAdapter(HTTPAdapter):
             data = response.content
         except Exception as e:
             data = {"success": "false"}
-            log.warning("error woot %s - response raw %s - body %s",
-                        str(e), str(req.url), str(req.body))
+            log.warning(
+                "error woot %s - response raw %s - body %s",
+                str(e),
+                str(req.url),
+                str(req.body),
+            )
             print(traceback.format_exc())
             if self.proxy_mw:
                 self.proxy_mw.mark_proxy_dead(req.proxy)
@@ -142,9 +152,8 @@ class ProxyAdapter(HTTPAdapter):
             proxy_cls = request.proxy = proxy
             # log.debug("using proxy %s", proxy)
             request.headers.update(proxy_cls.headers)
-            if hasattr(proxy_cls, 'header_hook') and proxy_cls.header_hook is not None:
-                new_headers = proxy_cls.header_hook(
-                    proxy_cls.uuid, proxy_cls.device)
+            if hasattr(proxy_cls, "header_hook") and proxy_cls.header_hook is not None:
+                new_headers = proxy_cls.header_hook(proxy_cls.uuid, proxy_cls.device)
                 request.headers.update(new_headers)
 
         log.debug("headersss %s", request.headers)
