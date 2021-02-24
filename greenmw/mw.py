@@ -61,7 +61,6 @@ class ProxyMiddleware:
 
     def __attrs_post_init__(self):
         logger.info("PROXY Middleware initialized!")
-        self.locations = cycle(("fr", "de", "au", "sg", "nl", "uk",))
         self.sem = BoundedSemaphore(1)
         self.backoff = exp_backoff_full_jitter
         self.init_proxies(self.proxies)
@@ -89,11 +88,6 @@ class ProxyMiddleware:
             gevent.sleep(5)  # waiting 5 seconds to other connection finish?
             logger.info("Proxy changed %s", self.changed)
             if not self.changed:
-                country = self.locations.__next__()
-                if country == self.mesh.active_country:
-                    country = self.locations.__next__()
-                    print("country is alread active get new", country)
-                self.mesh.change_location(country)
                 try:
                     proxies = self.mesh.get_proxies(country)
                 except Exception as e:
