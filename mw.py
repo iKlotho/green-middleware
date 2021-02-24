@@ -2,7 +2,7 @@
 import gevent
 import math
 import time
-import logging
+from loguru import logger
 import hashlib
 import random
 from itertools import cycle
@@ -11,8 +11,6 @@ try:
     from gevent.coros import BoundedSemaphore
 except:
     from gevent.lock import BoundedSemaphore
-
-log = logging.getLogger(__name__)
 
 
 @attr.s(frozen=True)
@@ -62,7 +60,7 @@ class ProxyMiddleware:
     changed: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self):
-        log.info("PROXY Middleware initialized!")
+        logger.info("PROXY Middleware initialized!")
         self.locations = cycle(("fr", "de", "au", "sg", "nl", "uk",))
         self.sem = BoundedSemaphore(1)
         self.backoff = exp_backoff_full_jitter
@@ -85,11 +83,11 @@ class ProxyMiddleware:
         """
         Set new proxy for new country in cycle
         """
-        log.info("Changing the proxy %s ", self.mesh)
+        logger.info("Changing the proxy %s ", self.mesh)
         if self.mesh:
-            log.info("Changing the proxy sleep for 5 seconds")
+            logger.info("Changing the proxy sleep for 5 seconds")
             gevent.sleep(5)  # waiting 5 seconds to other connection finish?
-            log.info("Proxy changed %s", self.changed)
+            logger.info("Proxy changed %s", self.changed)
             if not self.changed:
                 country = self.locations.__next__()
                 if country == self.mesh.active_country:
@@ -106,7 +104,7 @@ class ProxyMiddleware:
                 proxy_list = [self.proxy_init(proxy) for proxy in proxies]
                 self.init_proxies(proxy_list)
                 self.changed = True
-                log.info("Changed country to %s", country)
+                logger.info("Changed country to %s", country)
             return True
         return False
 
@@ -132,7 +130,7 @@ class ProxyMiddleware:
         for pkey in list(self.dead):
             state = self._proxies[pkey]
             if state.next_check is not None and state.next_check <= now:
-                log.info("Animated a proxy %s", pkey)
+                logger.info("Animated a proxy %s", pkey)
                 self.dead.remove(pkey)
                 self.unchecked.add(pkey)
 
@@ -153,7 +151,7 @@ class ProxyMiddleware:
         proxy.backoff_time = self.backoff(proxy.failed_attempts)
         proxy.next_check = now + proxy.backoff_time
         proxy.failed_attempts += 1
-        log.info("proxy marked bad %s", proxy)
+        logger.info("proxy marked bad %s", proxy)
         self.sem.release()
 
     def mark_proxy_good(self, proxy: Proxy) -> None:
@@ -163,7 +161,7 @@ class ProxyMiddleware:
         self.bad.discard(proxy)
         proxy.failed_attempts = 0
         proxy.dead = False
-        log.info("proxy marked good %s", proxy)
+        logger.info("proxy marked good %s", proxy)
         self.sem.release()
 
     def reset(self):
@@ -176,7 +174,7 @@ def exp_backoff(attempt, cap=36, base=5):
     """ Exponential backoff time """
     # this is a numerically stable version of
     # min(cap, base * 2 ** attempt)
-    max_attempts = math.log(cap / base, 2)
+    max_attempts = math.logger(cap / base, 2)
     if attempt <= max_attempts:
         return base * 2 ** attempt
     return cap
