@@ -4,5 +4,11 @@
     pass
 
 
+class StatusCodeException(Exception):
+    """ Used when the response status code is in retried codes"""
+
+    pass
+
+
 class ProxyError(Exception):
     pass

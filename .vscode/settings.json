@@ -6,7 +6,7 @@
     "python.formatting.provider": "black",
     "python.formatting.blackArgs": [
         "--line-length",
-        "88"
+        "89"
     ],
     "editor.formatOnSave": true,
     "python.pythonPath": "D:\\ProgramData\\Miniconda3\\envs\\greenmw\\python.exe",
