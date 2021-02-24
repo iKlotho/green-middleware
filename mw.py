@@ -15,14 +15,7 @@ except:
 log = logging.getLogger(__name__)
 
 
-def generate_uuid(proxy):
-    """
-    Generate v4 uuid for device
-    """
-    return hashlib.md5(proxy.encode("utf-8")).hexdigest()
-
-
-@attr.s
+@attr.s(frozen=True)
 class Proxy:
     address: str = attr.ib()
     formatted: dict = attr.ib(init=False, repr=False)
@@ -30,7 +23,6 @@ class Proxy:
     dead: bool = attr.ib(default=False)
     headers: dict = attr.ib(default={})
     next_check = attr.ib(default=None)
-    uuid: str = attr.ib(init=False)
     header_hook: callable = attr.ib(default=None)
     device: str = attr.ib(default="")
     used: int = attr.ib(default=0)
@@ -46,7 +38,6 @@ class Proxy:
             append = self.headers["X-ProxyMesh-Prefer-IP"]
             print("Xproxy in header ", append)
 
-        self.uuid = generate_uuid(self.address + append)
         # TODO check if address has http
         self.formatted = {"http": self.address, "https": self.address}
 
@@ -72,16 +63,7 @@ class ProxyMiddleware:
 
     def __attrs_post_init__(self):
         log.info("PROXY Middleware initialized!")
-        self.locations = cycle(
-            (
-                "fr",
-                "de",
-                "au",
-                "sg",
-                "nl",
-                "uk",
-            )
-        )
+        self.locations = cycle(("fr", "de", "au", "sg", "nl", "uk",))
         self.sem = BoundedSemaphore(1)
         self.backoff = exp_backoff_full_jitter
         self.init_proxies(self.proxies)
@@ -95,8 +77,8 @@ class ProxyMiddleware:
         self.good = set()
         self.unchecked = set()
         for proxy in proxies:
-            self._proxies[proxy.uuid] = proxy
-            self.unchecked.add(proxy.uuid)
+            self._proxies[proxy] = proxy
+            self.unchecked.add(proxy)
         self.reset()
 
     def set_new_proxies(self) -> None:
@@ -163,9 +145,9 @@ class ProxyMiddleware:
 
     def mark_proxy_dead(self, proxy: Proxy) -> None:
         self.sem.acquire()
-        self.dead.add(proxy.uuid)
-        self.good.discard(proxy.uuid)
-        self.unchecked.discard(proxy.uuid)
+        self.dead.add(proxy)
+        self.good.discard(proxy)
+        self.unchecked.discard(proxy)
         now = time.time()
         proxy.dead = True
         proxy.backoff_time = self.backoff(proxy.failed_attempts)
@@ -176,9 +158,9 @@ class ProxyMiddleware:
 
     def mark_proxy_good(self, proxy: Proxy) -> None:
         self.sem.acquire()
-        self.good.add(proxy.uuid)
-        self.unchecked.discard(proxy.uuid)
-        self.bad.discard(proxy.uuid)
+        self.good.add(proxy)
+        self.unchecked.discard(proxy)
+        self.bad.discard(proxy)
         proxy.failed_attempts = 0
         proxy.dead = False
         log.info("proxy marked good %s", proxy)
@@ -186,8 +168,8 @@ class ProxyMiddleware:
 
     def reset(self):
         for proxy in self.proxies:
-            self.unchecked.add(proxy.uuid)
-            self.dead.discard(proxy.uuid)
+            self.unchecked.add(proxy)
+            self.dead.discard(proxy)
 
 
 def exp_backoff(attempt, cap=36, base=5):

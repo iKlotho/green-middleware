@@ -1,27 +1,10 @@
-﻿import requests
-import ssl
+﻿import ssl
 from requests.adapters import HTTPAdapter
 from .exceptions import ServerErrorException
-import logging
-import hashlib
 import orjson
 import cchardet
 import random
 import traceback
-
-log = logging.getLogger("Adapter")
-
-
-def generate_pid(proxy):
-    """
-    Generate v4 uuid for device
-    """
-    return hashlib.md5(proxy.encode("utf-8")).hexdigest()
-
-
-def logging_hook(response, *args, **kwargs):
-    data = dump.dump_all(response)
-    print(data.decode("utf-8"))
 
 
 class ProxyAdapter(HTTPAdapter):
